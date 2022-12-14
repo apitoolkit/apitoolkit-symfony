@@ -1,0 +1,11 @@
+parameters:
+  apitoolkit.apiKey: '%env(APITOOLKIT_KEY)%'
+  apitoolkit.rootURL: '%env("APITOOLKIT_ROOT_URL", "https://app.apitoolkit.io")%'
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    App\EventSubscriber\:
+        resource: '../src/EventSubscriber/'
