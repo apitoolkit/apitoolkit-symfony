@@ -1,6 +1,6 @@
 <?php
 
-namespace App\EventSubscriber;
+namespace APIToolkit\EventSubscriber;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -40,17 +40,28 @@ class APIToolkitService implements EventSubscriberInterface
 
   public function onKernelResponsePre(ResponseEvent $event)
   {
-    $credentials = $this->cachePool->get("apitoolkitInstance", function (ItemInterface $item) {
-      $item->expiresAfter(2000);
+    $this->cachePool->delete("apitoolkit.credentials");
+    $credentials = $this->cachePool->get("apitoolkit.credentials", function (ItemInterface $item) {
       $apiKey = $this->paramBag->get("apitoolkit.apiKey");
       $rootURL = $this->paramBag->get("apitoolkit.rootURL");
-      return Self::credentials($rootURL, $apiKey);
+      $credentials = Self::credentials($rootURL, $apiKey);
+      if (!$credentials) {
+        error_log("unable to load APIToolkit credentials");
+        $item->expiresAfter(0);
+        return;
+      }
+      $item->expiresAfter(2000);
+      return $credentials;
     });
+    // No credentials available, so there's no need continuing with apitoolkit logging.
+    if (!$credentials) return;
 
-    $payload = Self::payload($event->getRequest(), $event->getResponse(), $event->getRequest()->get("APIToolkitStartTime"), "thisprojectId");
+    $payload = Self::payload($event->getRequest(), $event->getResponse(), $event->getRequest()->get("APIToolkitStartTime"), $credentials["projectId"]);
     $this->publishMessage($payload, $credentials);
   }
 
+  // payload static method deterministically converts a request, response object, a start time and a projectId 
+  // into a pauload json object which APIToolkit server is able to interprete.
   public static function payload(Request $request, $response, $startTime, $projectId)
   {
     $query_params = [];
@@ -81,10 +92,10 @@ class APIToolkitService implements EventSubscriberInterface
     return $payload;
   }
 
+  // publishMessage leverages the credentials object to build a google pubsub topic 
+  // and then use that pubsub topic to publish a message into the APIToolkit pubsub queue.
   public function publishMessage($payload, $credentials)
   {
-    if (!$credentials) return;
-
     $pubsubClient = new PubSubClient([
       "keyFile" => $credentials["pubsubKeyFile"]
     ]);
@@ -120,6 +131,14 @@ class APIToolkitService implements EventSubscriberInterface
 
     curl_close($curlInit);
 
-    return $response;
+    if (!$response) {
+      return $response;
+    }
+
+    return [
+      "projectId" => $response["project_id"],
+      "pubsubKeyFile" => $response["pubsub_push_service_account"],
+      "topic" => $response["topic_id"]
+    ];
   }
 }
