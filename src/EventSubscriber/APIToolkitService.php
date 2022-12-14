@@ -53,43 +53,30 @@ class APIToolkitService implements EventSubscriberInterface
 
   public static function payload(Request $request, $response, $startTime, $projectId)
   {
-    $since = hrtime(true) - $startTime;
     $query_params = [];
     foreach ($request->query->all() as $k => $v) {
       $query_params[$k] = [$v];
     }
 
-    $request_headers = $request->headers->all(); //  request->header();
-    $response_headers = $response->headers;
-
-    $paramsList = $request->query->all();
-    $routepath = $request->attributes->get('_route');
-    $path_params = $request->attributes->get('_route_params');
-
-    $timestamp = new DateTime();
-    $timestamp = $timestamp->format("c");
-    $host = $request->getHttpHost();
-    $referer = $request->headers->get("referer");
-
     $payload = (object)[
-      "duration" => round($since),
-      "host" => $host,
+      "duration" => round(hrtime(true) - $startTime),
+      "host" => $request->getHttpHost(),
       "method" => $request->getMethod(),
       "project_id" => $projectId,
       "proto_major" => 1,
       "proto_minor" => 1,
       "query_params" => $query_params,
-      "path_params" => $path_params,
+      "path_params" => $request->attributes->get('_route_params'),
       "raw_url" => $request->getRequestUri(),
-      "referer" => $referer ?? "",
+      "referer" => $request->headers->get("referer") ?? "",
       "request_body" => base64_encode($request->getContent()),
-      "request_headers" => $request_headers,
+      "request_headers" => $request->headers->all(),
       "response_body" => base64_encode($response->getContent()),
-      "response_headers" => $response_headers->all(),
+      "response_headers" => $response->headers->all(),
       "sdk_type" => "PhpSymfony",
       "status_code" => $response->getStatusCode(),
-      "timestamp" => $timestamp,
-      "url_path" => $routepath,
+      "timestamp" => (new DateTime())->format("c"),
+      "url_path" => $request->attributes->get('_route'),
     ];
     return $payload;
   }
