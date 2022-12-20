@@ -16,7 +16,7 @@ class APIToolkitService implements EventSubscriberInterface
 
     public function __construct(
         private string $apiKey,
-        private string $rootURL,
+        private string $rootURL = 'https://app.apitoolkit.io',
     ) {
         $this->startTimes = new \SplObjectStorage();
     }
