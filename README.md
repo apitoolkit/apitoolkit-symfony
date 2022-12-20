@@ -17,8 +17,8 @@ services:
   APIToolkit\EventSubscriber\APIToolkitService:
     arguments:
       - '%env(APITOOLKIT_KEY)%'
-      - 'https://app.apitoolkit.io' 
-```
+    tags:
+        - { name: 'kernel.event_subscriber' }```
 
 Set the APITOOLKIT_KEY environment variable to your API key in you .env file, should look like this:
 
