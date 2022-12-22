@@ -17,8 +17,14 @@ services:
   APIToolkit\EventSubscriber\APIToolkitService:
     arguments:
       - '%env(APITOOLKIT_KEY)%'
+    # if you want to cache login result add this cache poll instance via setter injection
+    calls:
+      - setCachePool: [ '@PutYourCachePoolServiceHere' ]
     tags:
-        - { name: 'kernel.event_subscriber' }```
+      - { name: 'kernel.event_subscriber' }
+
+
+```
 
 Set the APITOOLKIT_KEY environment variable to your API key in you .env file, should look like this:
 

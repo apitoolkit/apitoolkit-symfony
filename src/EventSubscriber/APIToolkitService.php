@@ -2,7 +2,10 @@
 
 namespace APIToolkit\EventSubscriber;
 
+use Google\Auth\Cache\Item;
+use Google\Auth\Cache\MemoryCacheItemPool;
 use Google\Cloud\PubSub\PubSubClient;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -11,6 +14,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 class APIToolkitService implements EventSubscriberInterface
 {
+    private const CACHE_KEY = 'apitoolkitInstance';
+    private CacheItemPoolInterface $cachePool;
     private array $credentials = [];
     private \SplObjectStorage $startTimes;
 
@@ -19,6 +24,12 @@ class APIToolkitService implements EventSubscriberInterface
         private string $rootURL = 'https://app.apitoolkit.io',
     ) {
         $this->startTimes = new \SplObjectStorage();
+        $this->cachePool = new MemoryCacheItemPool();
+    }
+
+    public function setCachePool(CacheItemPoolInterface $cachePool): void
+    {
+        $this->cachePool = $cachePool;
     }
 
     public static function getSubscribedEvents(): array
@@ -107,6 +118,17 @@ class APIToolkitService implements EventSubscriberInterface
 
     public function getCredentials(): array
     {
+        if ($this->credentials) {
+            return $this->credentials;
+        }
+
+        if ($this->cachePool->hasItem(self::CACHE_KEY)) {
+            $cacheResult = $this->cachePool->getItem(self::CACHE_KEY)->get();
+            if (is_array($cacheResult)) {
+                $this->credentials = $cacheResult;
+            }
+        }
+
         if (!$this->credentials) {
             $url = $this->rootURL . "/api/client_metadata";
 
@@ -127,6 +149,10 @@ class APIToolkitService implements EventSubscriberInterface
                 \curl_error($curlInit);
             } else {
                 $this->credentials = \json_decode($curlResponse, true);
+                $cacheItem = new Item(self::CACHE_KEY);
+                $cacheItem->set($this->credentials);
+                $cacheItem->expiresAfter(2000);
+                $this->cachePool->saveDeferred($cacheItem);
             }
 
             \curl_close($curlInit);
