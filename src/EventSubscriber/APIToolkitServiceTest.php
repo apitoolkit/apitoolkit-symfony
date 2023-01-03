@@ -119,21 +119,4 @@ class APIToolkitServiceTest extends TestCase
     $redactedJSON = $svc->redactJSONFields(['$.store.book[*].category'], $testJSON);
     $this->assertEquals($expectedJSON, $redactedJSON);
   }
-
-
-
-  // public function test_should_get_a_json_response(): void
-  // {
-  //   // instance our own listener
-  //   // $listener = new JsonExceptionResponseTransformerListener();
-  //   // $this->dispatcher->addListener('onKernelException', [$listener, 'onKernelException']);
-
-  //   // dispatch your event here
-  //   // $event = new ExceptionEvent();
-  //   // $dispatcher->dispatch($event, 'onKernelException');
-  //   // $this->assertInstanceOf(JsonResponse::class, $event->getResponse());
-  //   $svc = new APIToolkitService("");
-  //   $redactedJSON = $svc->redactJSONFields(['$.store.book'], $this->testJSON);
-  //   $this->assertJsonStringEqualsJsonString($this->testJSON, $redactedJSON);
-  // }
 }
