@@ -2,7 +2,7 @@
 
 namespace APIToolkit\EventSubscriber;
 
-use Google\Auth\Cache\Item;
+use Google\Auth\Cache\TypedItem;
 use Google\Auth\Cache\MemoryCacheItemPool;
 use Google\Cloud\PubSub\PubSubClient;
 use Psr\Cache\CacheItemPoolInterface;
@@ -149,7 +149,7 @@ class APIToolkitService implements EventSubscriberInterface
         \curl_error($curlInit);
       } else {
         $this->credentials = \json_decode($curlResponse, true);
-        $cacheItem = new Item(self::CACHE_KEY);
+        $cacheItem = new TypedItem(self::CACHE_KEY);
         $cacheItem->set($this->credentials);
         $cacheItem->expiresAfter(2000);
         $this->cachePool->saveDeferred($cacheItem);
