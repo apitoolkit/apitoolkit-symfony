@@ -26,6 +26,10 @@
     "symfony/http-kernel": ">=5.4",
     "symfony/dependency-injection": ">=5.4",
     "ext-json": "*",
-    "ext-curl": "*"
+    "ext-curl": "*",
+    "galbar/jsonpath": "dev-master"
+  },
+  "require-dev": {
+    "symfony/test-pack": "dev-main"
   }
 }

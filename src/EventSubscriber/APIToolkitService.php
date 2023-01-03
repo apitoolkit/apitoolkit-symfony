@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use JsonPath\JsonObject;
+use JsonPath\InvalidJsonException;
 
 class APIToolkitService implements EventSubscriberInterface
 {
@@ -21,6 +23,9 @@ class APIToolkitService implements EventSubscriberInterface
 
   public function __construct(
     private string $apiKey,
+    private array $redactHeaders = [],
+    private array $redactRequestBody = [],
+    private array $redactResponseBody = [],
     private string $rootURL = 'https://app.apitoolkit.io',
   ) {
     $this->startTimes = new \SplObjectStorage();
@@ -84,10 +89,10 @@ class APIToolkitService implements EventSubscriberInterface
       'path_params' => $request->attributes->get('_route_params'),
       'raw_url' => $request->getRequestUri(),
       'referer' => $request->headers->get('referer', ''),
-      'request_body' => base64_encode($request->getContent()),
-      'request_headers' => $request->headers->all(),
-      'response_body' => base64_encode($response->getContent()),
-      'response_headers' => $response->headers->all(),
+      'request_headers' => $this->redactHeaderFields($this->redactHeaders, $request->headers->all()),
+      'response_headers' => $this->redactHeaderFields($this->redactHeaders, $response->headers->all()),
+      'request_body' => base64_encode($this->redactJSONFields($this->redactRequestBody, $request->getContent())),
+      'response_body' => base64_encode($this->redactJSONFields($this->redactResponseBody, $response->getContent())),
       'sdk_type' => 'PhpSymfony',
       'status_code' => $response->getStatusCode(),
       'timestamp' => (new \DateTime())->format('c'),
@@ -144,7 +149,6 @@ class APIToolkitService implements EventSubscriberInterface
       \curl_setopt($curlInit, CURLOPT_SSL_VERIFYPEER, false);
 
       $curlResponse = \curl_exec($curlInit);
-
       if ($curlResponse == false) {
         \curl_error($curlInit);
       } else {
@@ -159,5 +163,32 @@ class APIToolkitService implements EventSubscriberInterface
     }
 
     return $this->credentials;
+  }
+
+  public function redactHeaderFields(array $redactKeys, array $headerFields): array
+  {
+    array_walk($headerFields, function (&$value, $key, $redactKeys) {
+      if (in_array(strtolower($key), array_map('strtolower', $redactKeys))) {
+        $value = ['[CLIENT_REDACTED]'];
+      }
+    }, $redactKeys);
+    return $headerFields;
+  }
+
+  // redactJSONFields accepts a list of jsonpath's to redact, and a json object to redact from, 
+  // and returns the final json after the redacting has been done.
+  public function redactJSONFields(array $redactKeys, string $jsonStr): string
+  {
+    try {
+      $obj = new JsonObject($jsonStr);
+    } catch (InvalidJsonException $e) {
+      // For any data that isn't json, we simply return the data as is.
+      return $jsonStr;
+    }
+
+    foreach ($redactKeys as $jsonPath) {
+      $obj->set($jsonPath, '[CLIENT_REDACTED]');
+    }
+    return $obj->getJson();
   }
 }
