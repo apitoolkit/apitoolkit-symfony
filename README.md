@@ -7,7 +7,9 @@ the apitoolkit. The SDK simply registers and event listener and consumes this in
 
 Run the following command to install the package:
 
+``` bash
 composer require apitoolkit/apitoolkit-symfony
+```
 
 add the listener to your service.yaml
 
