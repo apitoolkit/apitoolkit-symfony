@@ -65,7 +65,7 @@ class APIToolkitService implements EventSubscriberInterface
       return;
     }
 
-    $payload = $this->payload(
+    $payload = $this->buildPayload(
       $event->getRequest(),
       $event->getResponse(),
       $this->startTimes[$event->getRequest()],
@@ -76,7 +76,7 @@ class APIToolkitService implements EventSubscriberInterface
 
   // payload static method deterministically converts a request, response object, a start time and a projectId
   // into a pauload json object which APIToolkit server is able to interprete.
-  public function payload(Request $request, $response, $startTime, $projectId)
+  public function buildPayload(Request $request, $response, $startTime, $projectId)
   {
     return [
       'duration' => round(hrtime(true) - $startTime),

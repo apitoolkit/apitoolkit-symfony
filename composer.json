@@ -13,8 +13,8 @@
       "email": "anthonyalaribe@gmail.com"
     }
   ],
-  "prefer-stable": false,
-  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "minimum-stability": "stable",
   "autoload": {
     "psr-4": {
       "APIToolkit\\": "src/"
